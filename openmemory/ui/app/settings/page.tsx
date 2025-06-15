@@ -39,7 +39,7 @@ export default function SettingsPage() {
     // Load config from API on component mount
     const loadConfig = async () => {
       try {
-        await fetchConfig() // Start with basic configuration
+        await fetchConfig(true) // Load complete configuration including advanced settings
       } catch (error) {
         toast({
           title: "Error",

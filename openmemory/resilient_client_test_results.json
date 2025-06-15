@@ -1,0 +1,26 @@
+{
+  "中文事实提取": {
+    "status": "error",
+    "error": "无法获取memory client"
+  },
+  "简单问候": {
+    "status": "error",
+    "error": "无法获取memory client"
+  },
+  "复杂中文文本": {
+    "status": "error",
+    "error": "无法获取memory client"
+  },
+  "英文事实": {
+    "status": "error",
+    "error": "无法获取memory client"
+  },
+  "特殊字符": {
+    "status": "error",
+    "error": "无法获取memory client"
+  },
+  "长文本": {
+    "status": "error",
+    "error": "无法获取memory client"
+  }
+}

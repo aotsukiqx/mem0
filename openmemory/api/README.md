@@ -58,3 +58,24 @@ Once the server is running, you can access the API documentation at:
 - Write tests for new features
 - Update documentation when making changes
 - Run migrations for database changes
+
+# Opt
+
+```shell
+cd openmemory/api
+
+# 1. 查看当前状态
+python deploy_optimized.py --status
+
+# 2. 验证Graph Memory配置
+python deploy_optimized.py --verify
+
+# 3. 切换到优化版本
+python deploy_optimized.py --mode optimized
+
+# 4. 重启容器
+docker-compose restart openmemory-mcp
+
+# 5. 运行测试验证
+python test_optimized_mcp.py
+```

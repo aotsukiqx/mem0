@@ -8,10 +8,14 @@ import {
   setConfigError,
   updateLLM,
   updateEmbedder,
+  updateGraphStore,
+  updateVectorStore,
   updateMem0Config,
   updateOpenMemory,
   LLMProvider,
   EmbedderProvider,
+  GraphStoreProvider,
+  VectorStoreProvider,
   Mem0Config,
   OpenMemoryConfig
 } from '@/store/configSlice';
@@ -21,6 +25,9 @@ interface UseConfigApiReturn {
   saveConfig: (config: { openmemory?: OpenMemoryConfig; mem0: Mem0Config }) => Promise<void>;
   saveLLMConfig: (llmConfig: LLMProvider) => Promise<void>;
   saveEmbedderConfig: (embedderConfig: EmbedderProvider) => Promise<void>;
+  saveGraphStoreConfig: (graphStoreConfig: GraphStoreProvider) => Promise<void>;
+  saveVectorStoreConfig: (vectorStoreConfig: VectorStoreProvider) => Promise<void>;
+  saveOpenMemoryConfig: (openMemoryConfig: OpenMemoryConfig) => Promise<void>;
   resetConfig: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
@@ -121,11 +128,65 @@ export const useConfig = (): UseConfigApiReturn => {
     }
   };
 
+  const saveGraphStoreConfig = async (graphStoreConfig: GraphStoreProvider) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.put(`${URL}/api/v1/config/mem0/graph_store`, graphStoreConfig);
+      dispatch(updateGraphStore(response.data));
+      setIsLoading(false);
+      return response.data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to save Graph Store configuration';
+      setError(errorMessage);
+      setIsLoading(false);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const saveVectorStoreConfig = async (vectorStoreConfig: VectorStoreProvider) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.put(`${URL}/api/v1/config/mem0/vector_store`, vectorStoreConfig);
+      dispatch(updateVectorStore(response.data));
+      setIsLoading(false);
+      return response.data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to save Vector Store configuration';
+      setError(errorMessage);
+      setIsLoading(false);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const saveOpenMemoryConfig = async (openMemoryConfig: OpenMemoryConfig) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.put(`${URL}/api/v1/config/openmemory`, openMemoryConfig);
+      dispatch(updateOpenMemory(response.data));
+      setIsLoading(false);
+      return response.data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to save OpenMemory configuration';
+      setError(errorMessage);
+      setIsLoading(false);
+      throw new Error(errorMessage);
+    }
+  };
+
   return {
     fetchConfig,
     saveConfig,
     saveLLMConfig,
     saveEmbedderConfig,
+    saveGraphStoreConfig,
+    saveVectorStoreConfig,
+    saveOpenMemoryConfig,
     resetConfig,
     isLoading,
     error

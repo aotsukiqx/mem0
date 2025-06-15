@@ -154,20 +154,28 @@ async def list_memories(
             query = query.order_by(sort_field.desc()) if sort_direction == "desc" else query.order_by(sort_field.asc())
 
 
-    # Get paginated results
-    paginated_results = sqlalchemy_paginate(query, params)
+    # Add eager loading for categories
+    query = query.options(joinedload(Memory.categories))
 
-    # Filter results based on permissions
-    filtered_items = []
-    for item in paginated_results.items:
-        if check_memory_access_permissions(db, item, app_id):
-            filtered_items.append(item)
-
-    # Update paginated results with filtered items
-    paginated_results.items = filtered_items
-    paginated_results.total = len(filtered_items)
-
-    return paginated_results
+    # Get paginated results with transformer
+    return sqlalchemy_paginate(
+        query,
+        params,
+        transformer=lambda items: [
+            MemoryResponse(
+                id=memory.id,
+                content=memory.content,
+                created_at=memory.created_at,
+                state=memory.state.value,
+                app_id=memory.app_id,
+                app_name=memory.app.name if memory.app else None,
+                categories=[category.name for category in memory.categories],
+                metadata_=memory.metadata_
+            )
+            for memory in items
+            if check_memory_access_permissions(db, memory, app_id)
+        ]
+    )
 
 
 # Get all categories
@@ -239,25 +247,73 @@ async def create_memory(
             "error": str(client_error)
         }
 
-    # Try to save to Qdrant via memory_client
+    # Try to save to memory store via Mem0 client
     try:
-        qdrant_response = memory_client.add(
+        mem0_response = memory_client.add(
             request.text,
             user_id=request.user_id,  # Use string user_id to match search
             metadata={
                 "source_app": "openmemory",
                 "mcp_client": request.app,
-            }
+            },
+            infer=request.infer  # 传递 infer 参数给 Mem0
         )
         
         # Log the response for debugging
-        logging.info(f"Qdrant response: {qdrant_response}")
+        logging.info(f"Mem0 response: {mem0_response}")
+        logging.info(f"Request text: {request.text}")
+        logging.info(f"Request user_id: {request.user_id}")
+        logging.info(f"Request infer: {request.infer}")
+        logging.info(f"Request metadata: {request.metadata}")
         
-        # Process Qdrant response
-        if isinstance(qdrant_response, dict) and 'results' in qdrant_response:
-            for result in qdrant_response['results']:
+        # Handle None response from Mem0
+        if mem0_response is None:
+            logging.warning("Mem0 returned None response")
+            return {
+                "error": "Memory client returned None. This could be due to configuration issues or LLM problems.",
+                "details": "Check Mem0 configuration (LLM, vector store, embeddings) and API keys"
+            }
+        
+        # Process Mem0 response
+        if isinstance(mem0_response, dict) and 'results' in mem0_response:
+            # Check for diagnostic information indicating fallback failures
+            if mem0_response.get("diagnostic", {}).get("all_strategies_failed"):
+                logging.error("Mem0 ResilientMemoryClient: All fallback strategies failed")
+                return {
+                    "error": "Memory storage failed after trying all recovery strategies",
+                    "details": "The memory client could not process this text with any available strategy",
+                    "diagnostic": mem0_response["diagnostic"],
+                    "suggestions": [
+                        "Try with different text content",
+                        "Check if the text contains special characters or formatting",
+                        "Consider setting BYPASS_RESILIENT_CLIENT=true environment variable for debugging",
+                        "Verify LLM model availability and performance"
+                    ]
+                }
+            
+            # Check if results is empty
+            if not mem0_response['results']:
+                logging.warning(f"Mem0 returned empty results for text: '{request.text}'")
+                return {
+                    "warning": "Memory client returned empty results. The text might not have been processed.",
+                    "text_analyzed": request.text,
+                    "suggestions": [
+                        "Try with infer=false to force storage without LLM inference",
+                        "Check if the text contains meaningful personal information",
+                        "Verify LLM model configuration and API connectivity",
+                        "Try with English text to test if it's a language issue",
+                        "Check the custom fact extraction prompt configuration"
+                    ],
+                    "debug_info": {
+                        "request_infer": request.infer,
+                        "text_length": len(request.text),
+                        "text_language": "detected_chinese" if any('\u4e00' <= c <= '\u9fff' for c in request.text) else "non_chinese"
+                    }
+                }
+            
+            for result in mem0_response['results']:
                 if result['event'] == 'ADD':
-                    # Get the Qdrant-generated ID
+                    # Get the Mem0-generated ID
                     memory_id = UUID(result['id'])
                     
                     # Check if memory already exists
@@ -269,9 +325,9 @@ async def create_memory(
                         existing_memory.content = result['memory']
                         memory = existing_memory
                     else:
-                        # Create memory with the EXACT SAME ID from Qdrant
+                        # Create memory with the EXACT SAME ID from Mem0
                         memory = Memory(
-                            id=memory_id,  # Use the same ID that Qdrant generated
+                            id=memory_id,  # Use the same ID that Mem0 generated
                             user_id=user.id,
                             app_id=app_obj.id,
                             content=result['memory'],
@@ -292,11 +348,30 @@ async def create_memory(
                     db.commit()
                     db.refresh(memory)
                     return memory
-    except Exception as qdrant_error:
-        logging.warning(f"Qdrant operation failed: {qdrant_error}.")
+            
+            # If we get here, no ADD events were found
+            logging.warning(f"Mem0 response contains no ADD events. Response: {mem0_response}")
+            return {
+                "warning": "Memory client did not create any new memories",
+                "response": mem0_response,
+                "suggestion": "The text might have been filtered out or processed differently"
+            }
+        else:
+            # Handle unexpected response format
+            logging.warning(f"Mem0 returned unexpected response format: {type(mem0_response)} - {mem0_response}")
+            return {
+                "error": "Memory client returned unexpected response format",
+                "response_type": str(type(mem0_response)),
+                "response": mem0_response if not isinstance(mem0_response, (dict, list)) else str(mem0_response)
+            }
+            
+    except Exception as mem0_error:
+        logging.warning(f"Mem0 operation failed: {mem0_error}.")
+        logging.exception("Detailed Mem0 error:")
         # Return a json response with the error
         return {
-            "error": str(qdrant_error)
+            "error": str(mem0_error),
+            "error_type": type(mem0_error).__name__
         }
 
 

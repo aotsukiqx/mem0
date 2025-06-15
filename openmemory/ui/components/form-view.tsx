@@ -21,6 +21,8 @@ export function FormView({ settings, onChange }: FormViewProps) {
   const [showLlmApiKey, setShowLlmApiKey] = useState(false)
   const [showEmbedderApiKey, setShowEmbedderApiKey] = useState(false)
   const [showAdvancedConfig, setShowAdvancedConfig] = useState(false)
+  const [showGraphLlmApiKey, setShowGraphLlmApiKey] = useState(false)
+  const [showGraphLlmAdvanced, setShowGraphLlmAdvanced] = useState(false)
 
   const handleOpenMemoryChange = (key: string, value: any) => {
     onChange({
@@ -90,6 +92,19 @@ export function FormView({ settings, onChange }: FormViewProps) {
     })
   }
 
+  const handleGraphStoreProviderChange = (value: string) => {
+    onChange({
+      ...settings,
+      mem0: {
+        ...settings.mem0,
+        graph_store: {
+          ...settings.mem0.graph_store,
+          provider: value,
+        },
+      },
+    })
+  }
+
   const handleGraphStoreConfigChange = (key: string, value: any) => {
     onChange({
       ...settings,
@@ -101,6 +116,54 @@ export function FormView({ settings, onChange }: FormViewProps) {
             ...settings.mem0.graph_store?.config,
             [key]: value,
           },
+        },
+      },
+    })
+  }
+
+  const handleGraphStoreLlmProviderChange = (value: string) => {
+    onChange({
+      ...settings,
+      mem0: {
+        ...settings.mem0,
+        graph_store: {
+          ...settings.mem0.graph_store,
+          llm: {
+            ...settings.mem0.graph_store?.llm,
+            provider: value,
+          },
+        },
+      },
+    })
+  }
+
+  const handleGraphStoreLlmConfigChange = (key: string, value: any) => {
+    onChange({
+      ...settings,
+      mem0: {
+        ...settings.mem0,
+        graph_store: {
+          ...settings.mem0.graph_store,
+          llm: {
+            ...settings.mem0.graph_store?.llm,
+            config: {
+              ...settings.mem0.graph_store?.llm?.config,
+              [key]: value,
+            },
+          },
+        },
+      },
+    })
+  }
+
+  const handleVectorStoreProviderChange = (value: string) => {
+    onChange({
+      ...settings,
+      mem0: {
+        ...settings.mem0,
+        vector_store: {
+          ...settings.mem0.vector_store,
+          provider: value,
         },
       },
     })
@@ -124,8 +187,10 @@ export function FormView({ settings, onChange }: FormViewProps) {
 
   const needsLlmApiKey = settings.mem0?.llm?.provider?.toLowerCase() !== "ollama"
   const needsEmbedderApiKey = settings.mem0?.embedder?.provider?.toLowerCase() !== "ollama"
+  const needsGraphLlmApiKey = settings.mem0?.graph_store?.llm?.provider?.toLowerCase() !== "ollama"
   const isLlmOllama = settings.mem0?.llm?.provider?.toLowerCase() === "ollama"
   const isEmbedderOllama = settings.mem0?.embedder?.provider?.toLowerCase() === "ollama"
+  const isGraphLlmOllama = settings.mem0?.graph_store?.llm?.provider?.toLowerCase() === "ollama"
 
   const LLM_PROVIDERS = [
     "OpenAI",
@@ -156,6 +221,17 @@ export function FormView({ settings, onChange }: FormViewProps) {
     "Together",
     "LangChain",
     "AWS Bedrock",
+  ]
+
+  const GRAPH_STORE_PROVIDERS = [
+    "Neo4j",
+  ]
+
+  const VECTOR_STORE_PROVIDERS = [
+    "Milvus",
+    "Qdrant",
+    "Chroma",
+    "Postgres",
   ]
 
   return (
@@ -432,6 +508,25 @@ export function FormView({ settings, onChange }: FormViewProps) {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
+                <Label htmlFor="graph-store-provider">Graph Store Provider</Label>
+                <Select 
+                  value={settings.mem0?.graph_store?.provider || ""}
+                  onValueChange={handleGraphStoreProviderChange}
+                >
+                  <SelectTrigger id="graph-store-provider">
+                    <SelectValue placeholder="Select a provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GRAPH_STORE_PROVIDERS.map((provider) => (
+                      <SelectItem key={provider} value={provider.toLowerCase()}>
+                        {provider}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="graph-store-url">Neo4j URL</Label>
                 <Input
                   id="graph-store-url"
@@ -461,6 +556,138 @@ export function FormView({ settings, onChange }: FormViewProps) {
                   onChange={(e) => handleGraphStoreConfigChange("password", e.target.value)}
                 />
               </div>
+
+              {/* Graph Store LLM Configuration */}
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center space-x-2">
+                  <Label className="text-sm font-medium">Graph Store LLM Configuration</Label>
+                  <p className="text-xs text-muted-foreground">(Optional - uses main LLM if not set)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="graph-llm-provider">LLM Provider</Label>
+                  <Select 
+                    value={settings.mem0?.graph_store?.llm?.provider || ""}
+                    onValueChange={handleGraphStoreLlmProviderChange}
+                  >
+                    <SelectTrigger id="graph-llm-provider">
+                      <SelectValue placeholder="Select a provider (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LLM_PROVIDERS.map((provider) => (
+                        <SelectItem key={provider} value={provider.toLowerCase()}>
+                          {provider}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {settings.mem0?.graph_store?.llm?.provider && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="graph-llm-model">Model</Label>
+                      <Input
+                        id="graph-llm-model"
+                        placeholder="Enter model name"
+                        value={settings.mem0?.graph_store?.llm?.config?.model || ""}
+                        onChange={(e) => handleGraphStoreLlmConfigChange("model", e.target.value)}
+                      />
+                    </div>
+
+                    {isGraphLlmOllama && (
+                      <div className="space-y-2">
+                        <Label htmlFor="graph-llm-ollama-url">Ollama Base URL</Label>
+                        <Input
+                          id="graph-llm-ollama-url"
+                          placeholder="http://host.docker.internal:11434"
+                          value={settings.mem0?.graph_store?.llm?.config?.ollama_base_url || ""}
+                          onChange={(e) => handleGraphStoreLlmConfigChange("ollama_base_url", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Leave empty to use default: http://host.docker.internal:11434
+                        </p>
+                      </div>
+                    )}
+
+                    {!isGraphLlmOllama && (
+                      <div className="space-y-2">
+                        <Label htmlFor="graph-llm-openai-url">OpenAI Base URL</Label>
+                        <Input
+                          id="graph-llm-openai-url"
+                          placeholder="https://api.openai.com/v1"
+                          value={settings.mem0?.graph_store?.llm?.config?.openai_base_url || ""}
+                          onChange={(e) => handleGraphStoreLlmConfigChange("openai_base_url", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Custom OpenAI-compatible API endpoint (leave empty for default)
+                        </p>
+                      </div>
+                    )}
+
+                    {needsGraphLlmApiKey && (
+                      <div className="space-y-2">
+                        <Label htmlFor="graph-llm-api-key">API Key</Label>
+                        <div className="relative">
+                          <Input
+                            id="graph-llm-api-key"
+                            type={showGraphLlmApiKey ? "text" : "password"}
+                            placeholder="env:API_KEY"
+                            value={settings.mem0?.graph_store?.llm?.config?.api_key || ""}
+                            onChange={(e) => handleGraphStoreLlmConfigChange("api_key", e.target.value)}
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            type="button" 
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7"
+                            onClick={() => setShowGraphLlmApiKey(!showGraphLlmApiKey)}
+                          >
+                            {showGraphLlmApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Use "env:API_KEY" to load from environment variable, or enter directly
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex items-center space-x-2 pt-2">
+                      <Switch id="graph-llm-advanced-settings" checked={showGraphLlmAdvanced} onCheckedChange={setShowGraphLlmAdvanced} />
+                      <Label htmlFor="graph-llm-advanced-settings">Show advanced settings</Label>
+                    </div>
+
+                    {showGraphLlmAdvanced && (
+                      <div className="space-y-6 pt-2">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <Label htmlFor="graph-temperature">Temperature: {settings.mem0?.graph_store?.llm?.config?.temperature}</Label>
+                          </div>
+                          <Slider
+                            id="graph-temperature"
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            value={[settings.mem0?.graph_store?.llm?.config?.temperature || 0.7]}
+                            onValueChange={(value) => handleGraphStoreLlmConfigChange("temperature", value[0])}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="graph-max-tokens">Max Tokens</Label>
+                          <Input
+                            id="graph-max-tokens"
+                            type="number"
+                            placeholder="2000"
+                            value={settings.mem0?.graph_store?.llm?.config?.max_tokens || ""}
+                            onChange={(e) => handleGraphStoreLlmConfigChange("max_tokens", Number.parseInt(e.target.value) || "")}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -471,6 +698,25 @@ export function FormView({ settings, onChange }: FormViewProps) {
               <CardDescription>Configure your Milvus vector database connection</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="vector-store-provider">Vector Store Provider</Label>
+                <Select 
+                  value={settings.mem0?.vector_store?.provider || ""}
+                  onValueChange={handleVectorStoreProviderChange}
+                >
+                  <SelectTrigger id="vector-store-provider">
+                    <SelectValue placeholder="Select a provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VECTOR_STORE_PROVIDERS.map((provider) => (
+                      <SelectItem key={provider} value={provider.toLowerCase()}>
+                        {provider}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="vector-store-url">Milvus URL</Label>
                 <Input

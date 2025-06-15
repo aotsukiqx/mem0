@@ -166,36 +166,66 @@ async def search_memory(query: str) -> str:
             user_memories = db.query(Memory).filter(Memory.user_id == user.id).all()
             accessible_memory_ids = [memory.id for memory in user_memories if check_memory_access_permissions(db, memory, app.id)]
             
-            conditions = [qdrant_models.FieldCondition(key="user_id", match=qdrant_models.MatchValue(value=uid))]
-            
-            if accessible_memory_ids:
-                # Convert UUIDs to strings for Qdrant
-                accessible_memory_ids_str = [str(memory_id) for memory_id in accessible_memory_ids]
-                conditions.append(qdrant_models.HasIdCondition(has_id=accessible_memory_ids_str))
-
-            filters = qdrant_models.Filter(must=conditions)
+            # Use the appropriate vector store API based on the vector store type
             embeddings = memory_client.embedding_model.embed(query, "search")
+            vector_store_type = type(memory_client.vector_store).__name__
             
-            hits = memory_client.vector_store.client.query_points(
-                collection_name=memory_client.vector_store.collection_name,
-                query=embeddings,
-                query_filter=filters,
-                limit=10,
-            )
+            if vector_store_type == "MilvusDB":
+                # Use Milvus API
+                filters = {"user_id": uid}
+                hits = memory_client.vector_store.search(
+                    query=query,
+                    vectors=embeddings,
+                    limit=50,  # Get more results to filter by accessible IDs
+                    filters=filters
+                )
+                
+                # Filter results by accessible memory IDs
+                accessible_ids_str = [str(memory_id) for memory_id in accessible_memory_ids]
+                filtered_hits = [hit for hit in hits if hit.id in accessible_ids_str][:10]
+                
+                # Process search results for Milvus
+                memories = [
+                    {
+                        "id": memory.id,
+                        "memory": memory.payload.get("data", ""),
+                        "hash": memory.payload.get("hash"),
+                        "created_at": memory.payload.get("created_at"),
+                        "updated_at": memory.payload.get("updated_at"),
+                        "score": memory.score,
+                    }
+                    for memory in filtered_hits
+                ]
+            else:
+                # Fallback to Qdrant API
+                conditions = [qdrant_models.FieldCondition(key="user_id", match=qdrant_models.MatchValue(value=uid))]
+                
+                if accessible_memory_ids:
+                    # Convert UUIDs to strings for Qdrant
+                    accessible_memory_ids_str = [str(memory_id) for memory_id in accessible_memory_ids]
+                    conditions.append(qdrant_models.HasIdCondition(has_id=accessible_memory_ids_str))
 
-            # Process search results
-            memories = hits.points
-            memories = [
-                {
-                    "id": memory.id,
-                    "memory": memory.payload["data"],
-                    "hash": memory.payload.get("hash"),
-                    "created_at": memory.payload.get("created_at"),
-                    "updated_at": memory.payload.get("updated_at"),
-                    "score": memory.score,
-                }
-                for memory in memories
-            ]
+                filters = qdrant_models.Filter(must=conditions)
+                
+                hits = memory_client.vector_store.client.query_points(
+                    collection_name=memory_client.vector_store.collection_name,
+                    query=embeddings,
+                    query_filter=filters,
+                    limit=10,
+                )
+
+                # Process search results for Qdrant
+                memories = [
+                    {
+                        "id": memory.id,
+                        "memory": memory.payload["data"],
+                        "hash": memory.payload.get("hash"),
+                        "created_at": memory.payload.get("created_at"),
+                        "updated_at": memory.payload.get("updated_at"),
+                        "score": memory.score,
+                    }
+                    for memory in hits.points
+                ]
 
             # Log memory access for each memory found
             if isinstance(memories, dict) and 'results' in memories:

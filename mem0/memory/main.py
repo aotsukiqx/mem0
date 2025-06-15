@@ -331,12 +331,13 @@ class Memory(MemoryBase):
             ],
             response_format={"type": "json_object"},
         )
+        logger.debug(f"main.py response: {response}")
 
         try:
             response = remove_code_blocks(response)
             new_retrieved_facts = json.loads(response)["facts"]
         except Exception as e:
-            logging.error(f"Error in new_retrieved_facts: {e}")
+            logging.error(f"Error in new_retrieved_facts: {e}\n response: {response}")
             new_retrieved_facts = []
 
         if not new_retrieved_facts:

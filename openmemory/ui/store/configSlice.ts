@@ -6,6 +6,7 @@ export interface LLMConfig {
   max_tokens: number;
   api_key?: string;
   ollama_base_url?: string;
+  openai_base_url?: string;
 }
 
 export interface LLMProvider {
@@ -17,6 +18,7 @@ export interface EmbedderConfig {
   model: string;
   api_key?: string;
   ollama_base_url?: string;
+  openai_base_url?: string;
 }
 
 export interface EmbedderProvider {
@@ -24,9 +26,36 @@ export interface EmbedderProvider {
   config: EmbedderConfig;
 }
 
+export interface GraphStoreConfig {
+  url: string;
+  username: string;
+  password: string;
+}
+
+export interface GraphStoreProvider {
+  provider: string;
+  config: GraphStoreConfig;
+  llm?: LLMProvider;
+}
+
+export interface VectorStoreConfig {
+  collection_name: string;
+  url: string;
+  embedding_model_dims: number;
+  token?: string;
+}
+
+export interface VectorStoreProvider {
+  provider: string;
+  config: VectorStoreConfig;
+}
+
 export interface Mem0Config {
   llm?: LLMProvider;
   embedder?: EmbedderProvider;
+  graph_store?: GraphStoreProvider;
+  vector_store?: VectorStoreProvider;
+  version?: string;
 }
 
 export interface OpenMemoryConfig {
@@ -45,22 +74,7 @@ const initialState: ConfigState = {
     custom_instructions: null,
   },
   mem0: {
-    llm: {
-      provider: 'openai',
-      config: {
-        model: 'gpt-4o-mini',
-        temperature: 0.1,
-        max_tokens: 2000,
-        api_key: 'env:OPENAI_API_KEY',
-      },
-    },
-    embedder: {
-      provider: 'openai',
-      config: {
-        model: 'text-embedding-3-small',
-        api_key: 'env:OPENAI_API_KEY',
-      },
-    },
+    // 空配置，将从API加载真实的默认配置
   },
   status: 'idle',
   error: null,
@@ -95,6 +109,12 @@ const configSlice = createSlice({
     updateEmbedder: (state, action: PayloadAction<EmbedderProvider>) => {
       state.mem0.embedder = action.payload;
     },
+    updateGraphStore: (state, action: PayloadAction<GraphStoreProvider>) => {
+      state.mem0.graph_store = action.payload;
+    },
+    updateVectorStore: (state, action: PayloadAction<VectorStoreProvider>) => {
+      state.mem0.vector_store = action.payload;
+    },
     updateMem0Config: (state, action: PayloadAction<Mem0Config>) => {
       state.mem0 = action.payload;
     },
@@ -108,6 +128,8 @@ export const {
   updateOpenMemory,
   updateLLM,
   updateEmbedder,
+  updateGraphStore,
+  updateVectorStore,
   updateMem0Config,
 } = configSlice.actions;
 

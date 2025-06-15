@@ -1,7 +1,10 @@
+import os
+os.environ["MEM0_TELEMETRY"] = "False"
+
 import datetime
 from fastapi import FastAPI
 from app.database import engine, Base, SessionLocal
-from app.mcp_server import setup_mcp_server
+from app.mcp_server_optimized import setup_mcp_server
 from app.routers import memories_router, apps_router, stats_router, config_router
 from fastapi_pagination import add_pagination
 from fastapi.middleware.cors import CORSMiddleware

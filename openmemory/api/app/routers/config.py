@@ -67,60 +67,14 @@ class ConfigSchema(BaseModel):
     mem0: Mem0Config
 
 def get_default_configuration():
-    """Get the default configuration with sensible defaults for LLM and embedder."""
-    return {
-        "openmemory": {
-            "custom_instructions": None
-        },
-        "mem0": {
-            "llm": {
-                "provider": "openai",
-                "config": {
-                    "model": "qwen-32b",
-                    "openai_base_url": "https://1api.mynameqx.top:5003/v1",
-                    "api_key": "env:OPENAI_API_KEY",
-                    "temperature": 0.6,
-                    "max_tokens": 32768
-                }
-            },
-            "graph_store": {
-                "provider": "neo4j",
-                "config": {
-                    "url": "neo4j://n1.mynameqx.top:7687",
-                    "username": "neo4j",
-                    "password": "i2EYPRi5FQsGxLNviL6T"
-                },
-                "llm" : {
-                    "provider": "openai",
-                    "config": {
-                        "model": "qwen-32b",
-                        "openai_base_url": "https://1api.mynameqx.top:5003/v1",
-                        "api_key": "env:OPENAI_API_KEY",
-                        "temperature": 0.6,
-                        "max_tokens": 32768
-                    }
-                }
-            },
-            "vector_store": {
-                "provider": "milvus",
-                "config": {
-                    "collection_name": "cursor",
-                    "url": "http://n1.mynameqx.top:19530",
-                    "embedding_model_dims": 5376,
-                    "token": "env:MILVUS_TOKEN"
-                }
-            },
-            "embedder": {
-                "provider": "openai",
-                "config": {
-                    "openai_base_url": "https://1api.mynameqx.top:5003/v1",
-                    "model": "gemma3-27b",
-                    "api_key": "env:OPENAI_API_KEY"
-                }
-            },
-            "version": "v1.1"
-        }
-    }
+    """
+    获取默认配置。
+    
+    注意：此函数已弃用，建议使用 app.utils.config_manager.config_manager.get_built_in_default_config() 代替。
+    保留此函数仅为向后兼容。
+    """
+    from app.utils.config_manager import config_manager
+    return config_manager.get_built_in_default_config()
 
 def get_frontend_default_configuration(include_advanced: bool = False):
     """Get the filtered default configuration for frontend display."""
@@ -143,62 +97,27 @@ def get_frontend_default_configuration(include_advanced: bool = False):
         }
 
 def get_config_from_db(db: Session, key: str = "main"):
-    """Get configuration from database."""
-    config = db.query(ConfigModel).filter(ConfigModel.key == key).first()
+    """
+    从数据库获取配置。
     
-    if not config:
-        # Create default config with proper provider configurations
-        default_config = get_default_configuration()
-        db_config = ConfigModel(key=key, value=default_config)
-        db.add(db_config)
-        db.commit()
-        db.refresh(db_config)
-        return default_config
-    
-    # Ensure the config has all required sections with defaults
-    config_value = config.value
-    default_config = get_default_configuration()
-    
-    # Merge with defaults to ensure all required fields exist
-    if "openmemory" not in config_value:
-        config_value["openmemory"] = default_config["openmemory"]
-    
-    if "mem0" not in config_value:
-        config_value["mem0"] = default_config["mem0"]
-    else:
-        # Ensure LLM config exists with defaults
-        if "llm" not in config_value["mem0"] or config_value["mem0"]["llm"] is None:
-            config_value["mem0"]["llm"] = default_config["mem0"]["llm"]
-        
-        # Ensure embedder config exists with defaults
-        if "embedder" not in config_value["mem0"] or config_value["mem0"]["embedder"] is None:
-            config_value["mem0"]["embedder"] = default_config["mem0"]["embedder"]
-    
-    # Save the updated config back to database if it was modified
-    if config_value != config.value:
-        config.value = config_value
-        db.commit()
-        db.refresh(config)
-    
-    return config_value
+    注意：此函数已弃用，建议使用 app.utils.config_manager.config_manager.get_config_from_db() 代替。
+    保留此函数仅为向后兼容。
+    """
+    from app.utils.config_manager import config_manager
+    return config_manager.get_config_from_db(db, key)
 
 def save_config_to_db(db: Session, config: Dict[str, Any], key: str = "main"):
-    """Save configuration to database."""
-    db_config = db.query(ConfigModel).filter(ConfigModel.key == key).first()
+    """
+    保存配置到数据库。
     
-    if db_config:
-        db_config.value = config
-        db_config.updated_at = None  # Will trigger the onupdate to set current time
-    else:
-        db_config = ConfigModel(key=key, value=config)
-        db.add(db_config)
-        
-    db.commit()
-    db.refresh(db_config)
-    return db_config.value
+    注意：此函数已弃用，建议使用 app.utils.config_manager.config_manager.save_config_to_db() 代替。
+    保留此函数仅为向后兼容。
+    """
+    from app.utils.config_manager import config_manager
+    return config_manager.save_config_to_db(db, config, key)
 
 @router.get("/", response_model=ConfigSchema)
-async def get_configuration(advanced: bool = False, db: Session = Depends(get_db)):
+async def get_configuration(advanced: bool = True, db: Session = Depends(get_db)):
     """Get the current configuration."""
     config = get_config_from_db(db)
     
@@ -243,21 +162,22 @@ async def update_configuration(config: ConfigSchema, db: Session = Depends(get_d
         updated_config["mem0"]["llm"] = mem0_update["llm"]
     if "embedder" in mem0_update:
         updated_config["mem0"]["embedder"] = mem0_update["embedder"]
+    if "graph_store" in mem0_update:
+        updated_config["mem0"]["graph_store"] = mem0_update["graph_store"]
+    if "vector_store" in mem0_update:
+        updated_config["mem0"]["vector_store"] = mem0_update["vector_store"]
+    if "version" in mem0_update:
+        updated_config["mem0"]["version"] = mem0_update["version"]
     
     # Save the configuration to database
     save_config_to_db(db, updated_config)
     reset_memory_client()
     
-    # Return filtered configuration for frontend
-    filtered_config = {
+    # Return full configuration for frontend (so JSON editor shows complete config)
+    return {
         "openmemory": updated_config.get("openmemory", {}),
-        "mem0": {
-            "llm": updated_config.get("mem0", {}).get("llm"),
-            "embedder": updated_config.get("mem0", {}).get("embedder")
-        }
+        "mem0": updated_config.get("mem0", {})
     }
-    
-    return filtered_config
 
 @router.post("/reset", response_model=ConfigSchema)
 async def reset_configuration(db: Session = Depends(get_db)):
@@ -270,8 +190,8 @@ async def reset_configuration(db: Session = Depends(get_db)):
         save_config_to_db(db, default_config)
         reset_memory_client()
         
-        # Return filtered configuration for frontend
-        return get_frontend_default_configuration()
+        # Return full configuration for frontend (so JSON editor shows complete config)
+        return get_frontend_default_configuration(include_advanced=True)
     except Exception as e:
         raise HTTPException(
             status_code=500, 
@@ -348,4 +268,52 @@ async def update_openmemory_configuration(openmemory_config: OpenMemoryConfig, d
     # Save the configuration to database
     save_config_to_db(db, current_config)
     reset_memory_client()
-    return current_config["openmemory"] 
+    return current_config["openmemory"]
+
+@router.get("/mem0/graph_store", response_model=GraphStoreProvider)
+async def get_graph_store_configuration(db: Session = Depends(get_db)):
+    """Get only the Graph Store configuration."""
+    config = get_config_from_db(db)
+    graph_store_config = config.get("mem0", {}).get("graph_store", {})
+    return graph_store_config
+
+@router.put("/mem0/graph_store", response_model=GraphStoreProvider)
+async def update_graph_store_configuration(graph_store_config: GraphStoreProvider, db: Session = Depends(get_db)):
+    """Update only the Graph Store configuration."""
+    current_config = get_config_from_db(db)
+    
+    # Ensure mem0 key exists
+    if "mem0" not in current_config:
+        current_config["mem0"] = {}
+    
+    # Update the Graph Store configuration
+    current_config["mem0"]["graph_store"] = graph_store_config.dict(exclude_none=True)
+    
+    # Save the configuration to database
+    save_config_to_db(db, current_config)
+    reset_memory_client()
+    return current_config["mem0"]["graph_store"]
+
+@router.get("/mem0/vector_store", response_model=VectorStoreProvider)
+async def get_vector_store_configuration(db: Session = Depends(get_db)):
+    """Get only the Vector Store configuration."""
+    config = get_config_from_db(db)
+    vector_store_config = config.get("mem0", {}).get("vector_store", {})
+    return vector_store_config
+
+@router.put("/mem0/vector_store", response_model=VectorStoreProvider)
+async def update_vector_store_configuration(vector_store_config: VectorStoreProvider, db: Session = Depends(get_db)):
+    """Update only the Vector Store configuration."""
+    current_config = get_config_from_db(db)
+    
+    # Ensure mem0 key exists
+    if "mem0" not in current_config:
+        current_config["mem0"] = {}
+    
+    # Update the Vector Store configuration
+    current_config["mem0"]["vector_store"] = vector_store_config.dict(exclude_none=True)
+    
+    # Save the configuration to database
+    save_config_to_db(db, current_config)
+    reset_memory_client()
+    return current_config["mem0"]["vector_store"] 
