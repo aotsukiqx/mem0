@@ -13,16 +13,16 @@
         "graph_store": {
             "provider": "neo4j",
             "config": {
-                "url": "neo4j://n1.mynameqx.top:7687",
+                "url": "neo4j+s://n1.mynameqx.top:7687",
                 "username": "neo4j",
                 "password": "i2EYPRi5FQsGxLNviL6T"
             },
             "llm": {
                 "provider": "openai",
                 "config": {
-                    "model": "qwen-32b",
-                    "openai_base_url": "https://1api.mynameqx.top:5003/v1",
-                    "api_key": "env:OPENAI_API_KEY",
+                    "model": "qwen-plus-latest",
+                    "openai_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                    "api_key": "env:ALIYUN_API_KEY",
                     "temperature": 0.6,
                     "max_tokens": 32768
                 }

@@ -39,7 +39,7 @@ def get_configured_openai_client():
     
     # 创建OpenAI客户端
     api_key = llm_config.get('api_key')
-    base_url = llm_config.get('openai_base_url', 'https://api.openai.com/v1')
+    base_url = llm_config.get('openai_base_url', 'https://1api.mynameqx.top:5003/v1')
     
     _openai_client = OpenAI(api_key=api_key, base_url=base_url)
     return _openai_client
@@ -115,11 +115,48 @@ def get_categories_for_memory(memory: str) -> List[str]:
             logger.error(f"❌ categories 不是列表: {type(categories)} = {categories}")
             raise TypeError("categories should be a list")
         
+        # 标准化分类名称（转换为小写并去除多余空格）
         categories = [cat.strip().lower() for cat in categories if cat and cat.strip()]
-        logger.info(f"✅ 最终分类结果: {categories}")
         
-        # TODO: Validate categories later may be
-        return categories
+        # 验证分类数量（限制在1-3个之间）
+        if len(categories) > 3:
+            logger.warning(f"⚠️ 分类数量过多({len(categories)})，截取前3个: {categories[:3]}")
+            categories = categories[:3]
+        
+        # 分类映射和标准化（处理常见的变体）
+        category_mapping = {
+            'personal': 'personal identity',
+            'work': 'career & work',
+            'job': 'career & work',
+            'health': 'health & wellness',
+            'fitness': 'health & wellness',
+            'education': 'education & learning',
+            'learning': 'education & learning',
+            'hobbies': 'hobbies & interests',
+            'entertainment': 'entertainment',
+            'food': 'food & dining',
+            'travel': 'travel & places',
+            'finance': 'finance & money',
+            'money': 'finance & money',
+            'shopping': 'shopping & purchases',
+            'organization': 'organization & planning',
+            'planning': 'organization & planning',
+            'tech': 'technology & digital',
+            'technology': 'technology & digital',
+            'news': 'news & current events',
+            'goals': 'goals & aspirations'
+        }
+        
+        # 应用分类映射
+        standardized_categories = []
+        for cat in categories:
+            mapped_cat = category_mapping.get(cat, cat)
+            if mapped_cat not in standardized_categories:  # 避免重复
+                standardized_categories.append(mapped_cat)
+        
+        logger.info(f"✅ 最终分类结果: {standardized_categories}")
+        
+        return standardized_categories
         
     except Exception as e:
         logger.error(f"❌ 分类失败，错误类型: {type(e).__name__}")

@@ -37,44 +37,48 @@ type Category = string;
 const defaultIcon = <CircleHelp className="w-4 h-4 mr-2" />;
 
 const iconMap: Record<string, any> = {
-  // Core themes
+  // 🎯 Core Life Domains
+  "personal identity": <PersonStandingIcon className="w-4 h-4 mr-2" />,
+  "relationships": <Users className="w-4 h-4 mr-2" />,
+  "health & wellness": <HeartPulse className="w-4 h-4 mr-2" />,
+  "career & work": <FaBriefcase className="w-4 h-4 mr-2" />,
+  "education & learning": <Book className="w-4 h-4 mr-2" />,
+
+  // 🎨 Personal Interests & Lifestyle
+  "hobbies & interests": <FaRegSmile className="w-4 h-4 mr-2" />,
+  "entertainment": <Palette className="w-4 h-4 mr-2" />,
+  "food & dining": <Heart className="w-4 h-4 mr-2" />,
+  "travel & places": <FaPlaneDeparture className="w-4 h-4 mr-2" />,
+
+  // 💼 Practical Life Management
+  "finance & money": <FaMoneyBillWave className="w-4 h-4 mr-2" />,
+  "shopping & purchases": <FaBusinessTime className="w-4 h-4 mr-2" />,
+  "organization & planning": <Settings className="w-4 h-4 mr-2" />,
+  "communication": <Users className="w-4 h-4 mr-2" />,
+
+  // 🛠️ Specialized Knowledge
+  "technology & digital": <Code className="w-4 h-4 mr-2" />,
+  "legal & compliance": <BriefcaseBusiness className="w-4 h-4 mr-2" />,
+  "business & professional": <FaUserTie className="w-4 h-4 mr-2" />,
+  "support & services": <CircleHelp className="w-4 h-4 mr-2" />,
+
+  // 📊 Information & Content
+  "news & current events": <Globe className="w-4 h-4 mr-2" />,
+  "knowledge & facts": <Brain className="w-4 h-4 mr-2" />,
+  "feedback & reviews": <FaRegHeart className="w-4 h-4 mr-2" />,
+  "goals & aspirations": <MapPin className="w-4 h-4 mr-2" />,
+
+  // Legacy mappings for backward compatibility
   health: <HeartPulse className="w-4 h-4 mr-2" />,
   wellness: <Heart className="w-4 h-4 mr-2" />,
   fitness: <HeartPulse className="w-4 h-4 mr-2" />,
   education: <Book className="w-4 h-4 mr-2" />,
   learning: <Book className="w-4 h-4 mr-2" />,
-  school: <Book className="w-4 h-4 mr-2" />,
-  coding: <FaLaptopCode className="w-4 h-4 mr-2" />,
-  programming: <Code className="w-4 h-4 mr-2" />,
-  development: <Code className="w-4 h-4 mr-2" />,
-  tech: <Settings className="w-4 h-4 mr-2" />,
-  design: <FaPaintBrush className="w-4 h-4 mr-2" />,
-  art: <Palette className="w-4 h-4 mr-2" />,
-  creativity: <Palette className="w-4 h-4 mr-2" />,
-  psychology: <Brain className="w-4 h-4 mr-2" />,
-  mental: <Brain className="w-4 h-4 mr-2" />,
-  social: <Users className="w-4 h-4 mr-2" />,
-  peronsal: <PersonStandingIcon className="w-4 h-4 mr-2" />,
-  life: <Heart className="w-4 h-4 mr-2" />,
-
-  // Work / Career
-  business: <FaBusinessTime className="w-4 h-4 mr-2" />,
   work: <FaBriefcase className="w-4 h-4 mr-2" />,
-  career: <FaUserTie className="w-4 h-4 mr-2" />,
-  jobs: <BriefcaseBusiness className="w-4 h-4 mr-2" />,
   finance: <FaMoneyBillWave className="w-4 h-4 mr-2" />,
-  money: <FaMoneyBillWave className="w-4 h-4 mr-2" />,
-
-  // Preferences
-  preference: <FaRegHeart className="w-4 h-4 mr-2" />,
-  interest: <FaRegSmile className="w-4 h-4 mr-2" />,
-
-  // Travel & Location
   travel: <FaPlaneDeparture className="w-4 h-4 mr-2" />,
-  journey: <FaPlaneDeparture className="w-4 h-4 mr-2" />,
-  location: <MapPin className="w-4 h-4 mr-2" />,
-  trip: <Globe className="w-4 h-4 mr-2" />,
-  places: <Globe className="w-4 h-4 mr-2" />,
+  personal: <PersonStandingIcon className="w-4 h-4 mr-2" />,
+  tech: <Code className="w-4 h-4 mr-2" />,
 };
 
 const getClosestIcon = (label: string): any => {

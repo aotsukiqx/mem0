@@ -1,4 +1,8 @@
-export type Category = "personal" | "work" | "health" | "finance" | "travel" | "education" | "preferences" | "relationships"
+export type Category = "personal identity" | "relationships" | "health & wellness" | "career & work" | "education & learning" | 
+  "hobbies & interests" | "entertainment" | "food & dining" | "travel & places" | 
+  "finance & money" | "shopping & purchases" | "organization & planning" | "communication" |
+  "technology & digital" | "legal & compliance" | "business & professional" | "support & services" |
+  "news & current events" | "knowledge & facts" | "feedback & reviews" | "goals & aspirations"
 export type Client = "chrome" | "chatgpt" | "cursor" | "windsurf" | "terminal" | "api"
 
 export interface Memory {

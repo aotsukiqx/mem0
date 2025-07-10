@@ -230,7 +230,7 @@ async def add_memories(text: str, metadata: str = "{}", infer: bool = True) -> s
         return f"Error adding memory: {e}"
 
 @mcp.tool(description="Search memories using Mem0 native API. Leverages both vector and graph search with advanced parameters.")
-async def search_memory(query: str, limit: int = 10, filters: str = "{}", rerank: bool = True) -> str:
+async def search_memory(query: str, limit: int = 10, filters: str = "{}") -> str:
     uid = user_id_var.get(None)
     client_name = client_name_var.get(None)
     
@@ -257,8 +257,7 @@ async def search_memory(query: str, limit: int = 10, filters: str = "{}", rerank
                 search_params = {
                     "query": query,
                     "user_id": uid,
-                    "limit": limit,
-                    "rerank": rerank
+                    "limit": limit
                 }
                 if filters_dict:
                     search_params["filters"] = filters_dict
